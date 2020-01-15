@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <title>Test UI for Canvas Assignments</title>
+
+  <style>
+     body {
+       margin: 4em;
+       padding: 0;
+       font-family: sans-serif;
+     }
+     
+     #assignment_form {
+         font-size: .95em;
+         margin-left: 1em;
+     }
+     .highlight-blue {
+         color: blue;
+     }
+     .highlight-red {
+         color: red;
+     }
+     hr {
+        background-color: dimgrey !important;
+        color: dimgrey !important;
+        border: solid 1px dimgrey !important;
+        height: 1px !important;
+    }
+     #confirm_it {
+         font-size: 1em;
+         margin: 1em;
+         //line-height: 60%;
+     }
+     label {
+         display: block;
+         margin-left: 20px;
+     }
+     input {
+        float: left;
+        margin-left: -20px;
+        margin-right: 7px;
+     }
+     #confirm_click {
+        position: relative;
+        margin-left: 20px;
+     }
+     #send_it {
+        position: relative;
+        margin-left: 20px;
+        float: left;
+     }
+     span.confirm {
+     color: blue;
+     }
+   </style>
+</head>
+<body>
+
+<div class="col-xs-12 col-lg-8" id="container">
+    <div id="heading">
+        <h2></h2>
+    </div>
+
+    <div id="box">
+    <p style="border:1px; border-style:solid; border-color:rgb(248, 54, 54); padding: 1em;">Thank you for agreeing to submit assignments in the UK Core area called Global Dynamics and Community, Culture and Citizenship in US. Click the box next to the assignments for each course/section to be assessed.  There are <span class="highlight-red"><b></b></span>course/sections from which to make selections. <br><br>Press the <i>Confirm Selections</i> button (bottom of page) when <u>all</u> assignments have been selected.</p>
+    </div>
+    <div id="assignment_form">
+    
+        <!--Select the assignments to be assessed:</p>-->
+    </div>
+    <div id="instructions_text_continue">
+        <h3>Confirmation of Selections<span class="highlight-blue"></span></h3><h4>
+        <p></p>
+        </h4>
+        <br>
+    </div>
+    <div id="confirm_it">
+        <span class="confirm">
+        <p></p>
+        </span>
+        <h5><br>
+            <span class="highlight-red">If the above assignments are what you would like to submit to be assessed, please press the <b><i>Send</i></b> button below.</span>
+        </h5>
+    </div>
+    <div id="confirm_button">
+        <hr>
+        <input type="submit" value="Confirm Selections" id="confirm_click" , disabled>
+    </div>
+
+    <div id="send_button">
+        <p>&nbsp;</p>
+        <input type="submit" value="Add/Remove Selections" id="change_it" , disabled>
+        <input type="submit" value="Send" id="send_it" , disabled>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+    </div>
+
+</div>
+
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script>
+
+        var csv = 'https://raw.githubusercontent.com/MarkCruse/canvas-paint/master/data/201910_course_assignments_ukcore_web_file.csv'
+        
+        var dataset = [];
+        var continue_clicked_track = 0;
+        document.getElementById("instructions_text_continue").style.display = "none";
+        disableConfirmBtn();
+        disableSendBtn();
+        linkBlueID = window.location.search.substring(1);  //parameter passed in URL
+        d3.csv(csv, d3.autoType)
+            .then(function(data) {
+                filtered = data.filter(function(d){ return d['Primary Instructor Link BLue Id'] == linkBlueID })
+
+                //Sort the filtered list
+                filtered.sort(function(a, b) {
+                    return parseFloat(a['Course Section']) - parseFloat(b['Course Section']) &&  parseFloat(a['Assignment ID']) - parseFloat(b['Assignment ID']);
+                });
+
+                //place all the unique values for Course Section in an array
+                const uniqueList = [];
+                const map = new Map();
+                for (const item of filtered) {
+                    if(!map.has(item['Course Section'])){
+                        map.set(item['Course Section'], true);    // set any value to Map
+                        uniqueList.push({CourseSection: item['Course Section'], AssignmentID: item['Assignment ID'], AcademicTerm: item['Academic Term']});
+                    }
+                }
+
+                       d3.select("#heading")
+                        d3.selectAll("h2")
+                       .html(filtered[0]['Academic Term'] + " - Assignments within course sections for primary instructor <span class='highlight-blue'></span>");
+
+                        d3.selectAll("span")
+                            d3.selectAll("#heading span")
+                            .text(filtered[0]['Primary Instructor Formatted Name']);
+                        
+                        d3.selectAll("#box b")
+                            .text(uniqueList.length + ' ');
+                        //    .text('Select assignments for each course/section to be assessed. There are ' + uniqueList.length + ' course/sections. Be sure to click the <Continue> button at the bottom once all assignments have been selected.')
+
+                
+                        d3.select("#assignment_form")
+                            .selectAll("div")
+                            .data(filtered)
+                            .join("div")
+                            .append("input")
+                            .attr("type", "checkbox")
+                            .property("checked", false)
+                            .on('change', function() {
+                                renderValues(this.value);
+                            })
+                            
+                            .attr("id", function(d) { 
+                                return 'id-' + d['Assignment ID']; })
+                            .on("change", function(d){
+                                enableBtn();            //enable the confirm button
+                                disableSendBtn();
+                                arrayMgmnt(d);
+                            });
+
+                        d3.selectAll("span")
+                            d3.selectAll("#heading span")
+                            .text(filtered[0]['Primary Instructor Formatted Name']);
+                            d3.selectAll("#assignment_form div")
+                                .attr("id", function(d) { 
+                                    return "ID-"+d['Assignment ID']})
+                                .data(filtered)
+                                .append("label")
+                                
+                                .text(function(d) {     
+                                   return d['Assignment Name'];
+
+                            })
+ 
+                            Object.keys(uniqueList).forEach(function(key) {
+                                //console.log(key, uniqueList[key].AssignmentID, uniqueList[key].CourseSection);
+                                
+                                searchAssignmentID = "#ID-"+uniqueList[key].AssignmentID
+                                d3.select(searchAssignmentID)
+                                    .insert("h3")
+                                    .text(uniqueList[key].CourseSection + " (" +uniqueList[key].AcademicTerm+")")
+                                    .lower()
+                            });
+
+                            d3.select("#confirm_click")
+                                .on('click', function() {
+                                    //Sort the filtered list
+                                    dataset.sort(function(a, b) {
+                                    return parseFloat(a['courseSection']) - parseFloat(b['courseSection']);
+                                    });
+                                    dataset.sort(function(a, b) {
+                                    return parseFloat(a['assignmentID']) - parseFloat(b['assignmentID']);
+                                    });
+                                    document.getElementById("confirm_it").disabled = true;
+                                    document.getElementById("confirm_it").style.display = "block";
+                                    document.getElementById("instructions_text_continue").style.display = "block";
+                                    document.getElementById("assignment_form").style.display = "none";
+
+                                    //d3.select("#instructions_text_continue")
+                                    d3.selectAll("#instructions_text_continue p")
+                                    .html("The following <span class='highlight-blue'>" + filtered[0]['Academic Term'] + "</span> course/sections and assignments are for  <span class='highlight-blue'> " + filtered[0]['Primary Instructor Formatted Name'] + "</span><br> ");
+
+                                    d3.select("#confirm_it span")
+                                    .selectAll("p")
+                                    .data(dataset)
+                                    .join("p")
+                                    .html(function(d) {
+                                    choices = d.courseSection + ', "' + d.assignmentName+'"';
+                                    return choices;
+                                    });
+                                    
+                                    continue_clicked_track++;
+                                    enableBtn(); //disable the Confirm button enable the Send button
+                                });
+                        d3.select("#send_it")
+                            .on('click', function() {
+                            sendMail(dataset);
+                            continue_clicked_track++;
+                            console.log(continue_clicked_track);
+                        });
+                        d3.select("#change_it")
+                            .on('click', function() {
+
+                            enableBtn(); //enable the confirm button
+                            document.getElementById("assignment_form").style.display = "block";
+                            disableSendBtn();
+                        });
+        });
+        function enableBtn() {
+            document.getElementById("confirm_click").disabled = false;
+            document.getElementById("confirm_click").style.display = "block";
+            // If count of dataset > 0 then add other buttons  Add/Remove Elements, Link for Email
+            if((continue_clicked_track > 0) && (dataset.length > 0)) {
+                document.getElementById("confirm_click").style.display = "none";
+                document.getElementById("send_it").disabled = false;
+                document.getElementById("send_it").style.display = "block";
+                document.getElementById("change_it").disabled = false;
+                document.getElementById("change_it").style.display = "block";
+                document.getElementById("box").style.display = "none";
+                document.getElementById("heading").style.display = "none";
+                continue_clicked_track = 0;
+
+            }
+
+        }
+        function disableConfirmBtn() {
+        document.getElementById("confirm_click").disabled = true;
+        document.getElementById("confirm_click").style.display = "none";
+        }
+
+        function disableSendBtn() {
+        document.getElementById("send_it").disabled = true;
+        document.getElementById("send_it").style.display = "none";
+        document.getElementById("confirm_it").disabled = true;
+        document.getElementById("confirm_it").style.display = "none";
+        document.getElementById("instructions_text_continue").style.display = "none";
+        document.getElementById("change_it").disabled = true;
+        document.getElementById("change_it").style.display = "none";
+        }
+
+
+        function isInArray(value, array) {
+           //console.log('search:',value, array.indexOf(value));
+            return array.indexOf(value);
+        }
+
+        function arrayMgmnt(d) {
+            if(typeof dataset[0] === 'undefined') {
+                dataset.push({courseSection: d['Course Section'], assignmentID: d['Assignment ID'],assignmentName:  d['Assignment Name'], academicTerm: d['Academic Term']});
+            }
+            else {
+                searchSet=[];
+                dataset.forEach(function (item, index) {
+                    searchSet.push(item.assignmentID);
+                })
+                check_exist = isInArray(d['Assignment ID'], searchSet);
+                console.log(check_exist);
+                if(check_exist < 0) {
+                    dataset.push({courseSection: d['Course Section'], assignmentID: d['Assignment ID'],assignmentName: d['Assignment Name'], academicTerm: d['Academic Term']});
+                    enableBtn();
+                }
+                else {
+                    dataset.splice(check_exist, 1); 
+                    if(dataset.length < 1) {
+                        disableConfirmBtn();
+                        disableSendBtn();
+                    }
+                }
+            }
+        }
+
+        function sendMail(dataset) {
+            var theDate = new Date();
+            var message_body = "The following assignments were selected for assessment in the UK Core area called Global Dynamics and Community, Culture and Citizenship in US:\n";
+            var assignments = '';
+            dataset.forEach(element => assignments = assignments + '\n' + element.courseSection + ',' + element.assignmentID + ',"' + element.assignmentName + '",' + element.academicTerm +',' + theDate.toLocaleString());
+
+            //var subject = document.getElementById("selectList").value;
+            message_body = message_body + assignments;
+
+            var subject = "Assessment Assignments";
+
+            document.location.href = "mailto:?subject="
+                + encodeURIComponent(subject)
+                + "&body=" + encodeURIComponent(message_body)
+                + "&target =_blank";
+
+        }
+
+    </script>
+</body>
+</html>
