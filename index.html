@@ -119,7 +119,7 @@
         d3.csv(csv, d3.autoType)
             .then(function(data) {
                 console.log(data)
-                filtered = data.filter(function(d){ return d['Primary Instructor Link BLue Id'] == linkBlueID })
+                filtered = data.filter(function(d){ return d['Primary Instructor Link Blue Id'] == linkBlueID })
                 //Sort the filtered list
                 filtered.sort(function(a, b) {
                     return parseFloat(a['Course Section']) - parseFloat(b['Course Section']) &&  parseFloat(a['Assignment ID']) - parseFloat(b['Assignment ID']);
