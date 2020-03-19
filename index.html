@@ -107,8 +107,8 @@
     <script src="https://d3js.org/d3.v5.min.js"></script>
 
     <script>
-        var csv = 'https://raw.githubusercontent.com/MarkCruse/canvas-paint/master/data/202010_202030_course_assignments_ukcore.csv'
         var csv = 'https://raw.githubusercontent.com/MarkCruse/canvas-paint/master/data/201910_course_assignments_ukcore_web_file.csv'
+        var csv = 'https://raw.githubusercontent.com/MarkCruse/canvas-paint/master/data/202010_202030_course_assignments_ukcore.csv'
 
         var dataset = [];
         var continue_clicked_track = 0;
@@ -118,13 +118,13 @@
         linkBlueID = window.location.search.substring(1);  //parameter passed in URL
         d3.csv(csv, d3.autoType)
             .then(function(data) {
+                console.log(data)
                 filtered = data.filter(function(d){ return d['Primary Instructor Link BLue Id'] == linkBlueID })
-
                 //Sort the filtered list
                 filtered.sort(function(a, b) {
                     return parseFloat(a['Course Section']) - parseFloat(b['Course Section']) &&  parseFloat(a['Assignment ID']) - parseFloat(b['Assignment ID']);
                 });
-
+                console.log(data)
                 //place all the unique values for Course Section in an array
                 const uniqueList = [];
                 const map = new Map();
